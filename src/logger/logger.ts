@@ -10,6 +10,7 @@ import {
   LEVEL_WARN,
   dateOptions,
 } from "./index";
+import { maskSensitiveData } from "./maskSensitiveData";
 
 const hideSensitiveData = (object, propertiesToHide) => {
   const newObject = JSON.parse(JSON.stringify(object));
@@ -29,7 +30,7 @@ const generateLogPayload = (
   propertiesToHide: string[] = []
 ) => {
   const toHide: string[] = [];
-  const newPayload = JSON.parse(JSON.stringify(payload));
+  const newPayload = maskSensitiveData(JSON.parse(JSON.stringify(payload)));
 
   if (propertiesToHide && propertiesToHide.length) {
     toHide.push(...propertiesToHide);
