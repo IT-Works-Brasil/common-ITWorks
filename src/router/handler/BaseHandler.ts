@@ -215,23 +215,68 @@ export default class BaseHandler {
 
   isAuthorized() {
     const checkByAuthMethod = {
-      header: this.authHeaderIsTheSameInTheEnvironment(),
+      header: () => this.authHeaderIsTheSameInTheEnvironment(),
     }[this.env.authMethod ?? "header"];
 
     if (checkByAuthMethod === undefined) {
       return true;
     }
-    return checkByAuthMethod;
+    return checkByAuthMethod();
   }
 
+  /**
+   * Confere o cabeçalho `Authorization` contra `authToken` e, durante a troca da credencial, também contra
+   * `authTokenNext`; quando casa, registra qual dos dois foi usado, sem o valor.
+   */
   authHeaderIsTheSameInTheEnvironment() {
     if (this.event.headers === undefined || this.env.noAuth) {
       return true;
     }
 
-    return (
-      this.event.headers.Authorization === this.env.authToken ||
-      this.event.headers.authorization === this.env.authToken
+    const credencial = this.credencialUsada();
+
+    if (credencial !== null) {
+      this.registrarCredencialUsada(credencial);
+    }
+
+    return credencial !== null;
+  }
+
+  credencialUsada(): CredencialUsada | null {
+    const { Authorization, authorization } = this.event.headers;
+    const casa = (valor: string | undefined) =>
+      Authorization === valor || authorization === valor;
+
+    const proxima = this.env.authTokenNext;
+    if (typeof proxima === "string" && proxima.length > 0 && casa(proxima)) {
+      return "nova";
+    }
+
+    if (casa(this.env.authToken)) {
+      return this.env.authToken ? "antiga" : "nenhuma-configurada";
+    }
+
+    return null;
+  }
+
+  registrarCredencialUsada(credencial: CredencialUsada) {
+    const headers = this.event.headers ?? {};
+
+    console.log(
+      JSON.stringify({
+        evento: EVENTO_CREDENCIAL_USADA,
+        credencial,
+        servico: this.env.AWS_LAMBDA_FUNCTION_NAME ?? this.env.service ?? null,
+        origem: headers.origin ?? headers.Origin ?? null,
+        userAgent: headers["User-Agent"] ?? headers["user-agent"] ?? null,
+        ip: this.event.requestContext?.identity?.sourceIp ?? null,
+      })
     );
   }
 }
+
+/** Qual valor da credencial casou: o atual (`authToken`), o próximo (`authTokenNext`) ou nenhum, quando o serviço não tem `authToken`. */
+export type CredencialUsada = "antiga" | "nova" | "nenhuma-configurada";
+
+/** Marca da linha de log que diz qual credencial casou — é por ela que se conta quem ainda usa o valor antigo. */
+export const EVENTO_CREDENCIAL_USADA = "credencial-do-gateway";
