@@ -43,9 +43,11 @@ serviços de [`serverless-itworks`](https://github.com/IT-Works-Brasil/serverles
 ## ③ Stack e convenções
 
 TypeScript `^5.4` compilado com `tsc` (`target: es5`, `module: commonjs`, `declaration`)
-para `lib/`. Jest 29 com `ts-jest`. `engines.node: >=14`. Nx 18 (`@nx/node`) está nas
-devDependencies e deixou `.nx/cache/` versionado, mas o `package.json` só declara `test` e
-`build`.
+para `lib/`. Jest 29 com `ts-jest`. `engines.node: >=14`. O `package.json` só declara
+`test` e `build`; o Nx saiu em 21/11/2026 (nunca foi usado, e trazia as vulnerabilidades de
+desenvolvimento). Desde a 2.5.0 o `nodemailer` é o 10 (exige Node 20; carrega no 16, conferido),
+e `ts-jest`/`ts-node` são só de desenvolvimento. `npm audit --omit=dev` deixa só as duas moderadas
+do `aws-sdk` v2 (`uuid`), que não tem versão corrigida: sai com a migração para o SDK v3.
 
 Dependências de runtime: `aws-sdk` (v2), `axios`, `joi`, `nodemailer`, `barcode-validator`
 — e `ts-jest`/`ts-node`, que estão em `dependencies` por engano histórico.
