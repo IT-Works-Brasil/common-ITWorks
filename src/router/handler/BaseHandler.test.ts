@@ -1,4 +1,4 @@
-import BaseHandler, { EVENTO_CREDENCIAL_USADA } from "./BaseHandler";
+import BaseHandler, { EVENTO_CREDENCIAL_USADA, lerHeader } from "./BaseHandler";
 
 const ANTIGO = "valor-antigo-de-teste";
 const NOVO = "valor-novo-de-teste";
@@ -123,5 +123,47 @@ describe("BaseHandler — convivência da credencial antiga com a nova", () => {
 
     expect(resposta.statusCode).toBe(200);
     expect(linhasDeCredencial(log)).toEqual([]);
+  });
+});
+
+describe("BaseHandler — cabeçalhos em qualquer caixa (chamado 140433)", () => {
+  beforeEach(() => {
+    jest.spyOn(console, "log").mockImplementation(() => undefined);
+    jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    jest.spyOn(console, "info").mockImplementation(() => undefined);
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+    delete (global as any).APP;
+    delete (global as any).DB_NAME_MAIN;
+    delete (global as any).EMAIL_LOGIN;
+    delete (global as any).CNPJ_GESTOR;
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it.each(["App", "APP", "app"])("escolhe o banco do Simulador com o cabeçalho %s", async (nome) => {
+    const handler = montar({ authToken: ANTIGO });
+
+    await handler.handle(evento({ Authorization: ANTIGO, [nome]: "simulador" }), {}, "rota");
+
+    expect((global as any).APP).toBe("simulador");
+    expect((global as any).DB_NAME_MAIN).toBe("SMF");
+  });
+
+  it("lê e-mail e gestor em caixa mista", async () => {
+    const handler = montar({ authToken: ANTIGO });
+
+    await handler.handle(
+      evento({ Authorization: ANTIGO, Email_Login: "pessoa@exemplo.test", Cnpj_Gestor: "12345678000100" }),
+      {},
+      "rota",
+    );
+
+    expect((global as any).EMAIL_LOGIN).toBe("pessoa@exemplo.test");
+    expect((global as any).CNPJ_GESTOR).toBe("12345678000100");
+  });
+
+  it("lerHeader devolve undefined sem cabeçalhos ou sem a chave", () => {
+    expect(lerHeader(undefined, "app")).toBeUndefined();
+    expect(lerHeader({ Outro: "x" }, "app")).toBeUndefined();
   });
 });

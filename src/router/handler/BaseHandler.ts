@@ -1,6 +1,14 @@
 import { HttpResponseModel } from "../../@types/http";
 import * as logger from "../../logger";
 
+/** Lê um cabeçalho pelo nome em qualquer caixa (a fachada do CloudFront entrega `App`, chamado 140433). */
+export const lerHeader = (headers: Record<string, any> | undefined | null, nome: string) => {
+  if (!headers) return undefined;
+  const alvo = nome.toLowerCase();
+  const chave = Object.keys(headers).find((k) => k.toLowerCase() === alvo);
+  return chave === undefined ? undefined : headers[chave];
+};
+
 export default class BaseHandler {
   event: any = null;
 
@@ -26,7 +34,7 @@ export default class BaseHandler {
     const origin = event.headers?.origin || event.headers?.Origin;
 
     if (JSON.stringify(event?.headers)?.toUpperCase().includes("DB_NAME")) {
-      global.DB_NAME = event.headers.DB_NAME ?? event.headers.db_name;
+      global.DB_NAME = lerHeader(event.headers, "db_name");
     }
 
     if (
@@ -34,23 +42,19 @@ export default class BaseHandler {
         ?.toLowerCase()
         .includes("usuario_compartilhado")
     ) {
-      global.USUARIO_COMPARTILHADO =
-        event.headers.USUARIO_COMPARTILHADO ??
-        event.headers.usuario_compartilhado;
+      global.USUARIO_COMPARTILHADO = lerHeader(event.headers, "usuario_compartilhado");
     }
 
     if (JSON.stringify(event?.headers)?.toLowerCase().includes("email_login")) {
-      global.EMAIL_LOGIN =
-        event.headers.EMAIL_LOGIN ?? event.headers.email_login;
+      global.EMAIL_LOGIN = lerHeader(event.headers, "email_login");
     }
 
     if (JSON.stringify(event?.headers)?.toLowerCase().includes("cnpj_gestor")) {
-      global.CNPJ_GESTOR =
-        event.headers.CNPJ_GESTOR ?? event.headers.cnpj_gestor;
+      global.CNPJ_GESTOR = lerHeader(event.headers, "cnpj_gestor");
     }
 
     if (JSON.stringify(event?.headers)?.toLowerCase().includes("app") || JSON.stringify(event?.pathParameters)?.toLowerCase().includes("app")) {
-      global.APP = event.headers.APP ?? event.headers.app ?? event?.pathParameters?.app;
+      global.APP = lerHeader(event.headers, "app") ?? event?.pathParameters?.app;
 
       switch (global.APP?.toLowerCase()) {
         case "simulador":

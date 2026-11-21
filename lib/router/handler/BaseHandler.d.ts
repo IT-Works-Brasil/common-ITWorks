@@ -1,4 +1,6 @@
 import { HttpResponseModel } from "../../@types/http";
+/** Lê um cabeçalho pelo nome em qualquer caixa (a fachada do CloudFront entrega `App`, chamado 140433). */
+export declare const lerHeader: (headers: Record<string, any> | undefined | null, nome: string) => any;
 export default class BaseHandler {
     event: any;
     context: null;
